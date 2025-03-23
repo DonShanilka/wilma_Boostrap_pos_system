@@ -105,11 +105,11 @@ update.on("click", function () {
     validation(nameValue, "customer name", null) &&
     validation(addressValue, "Address", null) &&
     validation(mobileValue, "Contact", mobilePattern.test(mobileValue))
-  ) {
+  ){
     let updatedCustomerDetails = {
-      customerId: idValue,
-      customerName: nameValue,
-      customerAddress: addressValue,
+      id: idValue,
+      name: nameValue,
+      address: addressValue,
       mobile: mobileValue,
     };
 
