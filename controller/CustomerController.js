@@ -8,7 +8,7 @@ let _Id = "";
 
 let submit = $("#customer_btn>button").eq(0);
 let update = $("#customer_btn>button").eq(1);
-let delete_btn = $("#customer_btn>button").eq(2);
+let deleteBtn = $("#customer_btn>button").eq(2);
 let reset = $("#customer_btn>button").eq(3);
 
 let searchBtn = $("#search2");
@@ -136,6 +136,34 @@ update.on("click", function () {
   }
 });
 
+deleteBtn.on("click", function () {
+  Swal.fire({
+    title: 'Are you sure?',
+    text: "You won't be able to revert this!",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Yes, delete it!'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Proceed with deletion
+      $.ajax({
+        url: `http://localhost:5000/api/customer/deleteCustomer/${_Id}`,
+        type: "DELETE",
+        success: function (response) {
+          Swal.fire("Deleted!", "Customer has been deleted.", "success");
+          loadAllCustomers(); // Reload customer table
+        },
+        error: function (xhr, status, error) {
+          console.error("Error deleting customer:", error);
+          Swal.fire("Error", "Failed to delete customer", "error");
+        }
+      });
+    }
+  });
+});
+
 // function generateCustomer {
 function loadAllCustomers() {
   $.ajax({
@@ -216,34 +244,6 @@ $(document).ready(function () {
   });
 });
 
-
-// delete_btn.on("click", function () {
-//   let idValue = customerId.val();
-
-//   Swal.fire({
-//     title: "Are you sure?",
-//     text: "You won't be able to revert this!",
-//     icon: "warning",
-//     showCancelButton: true,
-//     confirmButtonColor: "#3085d6",
-//     cancelButtonColor: "#d33",
-//     confirmButtonText: "Delete",
-//   }).then((result) => {
-//     if (result.isConfirmed) {
-//       let index = customer_db.findIndex(
-//         (customer) => customer.customer_id === idValue
-//       );
-//       customer_db.splice(index, 1);
-//       cleanInputs();
-
-//       customerCount -= 1;
-//       document.getElementById("customerCount-lable").innerHTML = customerCount;
-
-//       Swal.fire("Deleted!", "Your file has been deleted.", "success");
-//       submit.prop("disabled", false);
-//     }
-//   });
-// });
 
 // reset.on("click", function (e) {
 //   e.preventDefault();
