@@ -245,20 +245,19 @@ $(document).ready(function () {
 });
 
 
-// reset.on("click", function (e) {
-//   e.preventDefault();
-//   customerId.val(generateCustomerId());
-//   customerName.val("");
-//   customerAddress.val("");
-//   mobile.val("");
-//   submit.prop("disabled", false);
-//   delete_btn.prop("disabled", true);
-//   update.prop("disabled", true);
-// });
+reset.on("click", function (e) {
+  e.preventDefault();
+  customerId.val("");
+  customerName.val("");
+  customerAddress.val("");
+  mobile.val("");
+  submit.prop("disabled", false);
+  deleteBtn.prop("disabled", true);
+  update.prop("disabled", true);
+});
 
 // document.getElementById("customerSubmit").onclick = function () {
 //   customerCount = customer_db.length;
 //   document.getElementById("customerCount-lable").innerHTML = customerCount;
 // };
 
-// console.log(customer_db);
