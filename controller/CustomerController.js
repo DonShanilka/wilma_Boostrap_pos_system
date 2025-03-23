@@ -4,6 +4,7 @@ let customerId = $("#customerId");
 let customerName = $("#customerName");
 let customerAddress = $("#address");
 let mobile = $("#mobile");
+let _Id = "";
 
 let submit = $("#customer_btn>button").eq(0);
 let update = $("#customer_btn>button").eq(1);
@@ -14,6 +15,9 @@ let searchBtn = $("#search2");
 let searchField = $("#searchField2");
 
 let customerCount = 0;
+
+let customerData = [];
+console.log("Customer Data ", customerData);
 
 const mobilePattern = new RegExp(
   "^(?:0|94|\\+94|0094)?(?:(11|21|23|24|25|26|27|31|32|33|34|35|36|37|38|41|45|47|51|52|54|55|57|63|65|66|67|81|91)(0|2|3|4|5|7|9)|7(0|1|2|4|5|6|7|8)\\d)\\d{6}$"
@@ -45,13 +49,13 @@ const mobilePattern = new RegExp(
 // });
 
 const cleanInputs = () => {
-  $("#customerId").val(generateCustomerId());
+  $("#customerId").val("");
   $("#customerName").val("");
   $("#address").val("");
   $("#mobile").val("");
 };
 
-// Customer Save 
+// Customer Save
 submit.on("click", () => {
   let idValue = customerId.val();
   let nameValue = customerName.val();
@@ -63,12 +67,11 @@ submit.on("click", () => {
     validation(addressValue, "Address", null) &&
     validation(mobileValue, "Contact", mobilePattern.test(mobileValue))
   ) {
-
     let customerDetails = new CustomerModel(
       idValue,
       nameValue,
       addressValue,
-      Number(mobileValue) 
+      Number(mobileValue)
     );
 
     const customerJson = JSON.stringify(customerDetails);
@@ -76,56 +79,100 @@ submit.on("click", () => {
 
     $.ajax({
       type: "POST",
-      url: "http://localhost:5000/api/customer/saveCustomer", 
-      contentType: "application/json", 
-      data: customerJson, 
+      url: "http://localhost:5000/api/customer/saveCustomer",
+      contentType: "application/json",
+      data: customerJson,
       success: function () {
         Swal.fire("Customer Added Successfully!", "Successful", "success");
-        cleanInputs(); 
+        cleanInputs();
       },
       error: function (xhr, status, error) {
         console.log("Error: ", error);
-        console.log("Response: ", xhr.responseText); 
+        console.log("Response: ", xhr.responseText);
         Swal.fire("Error", "Error in adding customer", "error");
       },
     });
   }
 });
 
+update.on("click", function () {
+  let idValue = $("#customerId").val();        
+  let nameValue = $("#customerName").val();    
+  let addressValue = $("#address").val();     
+  let mobileValue = $("#mobile").val();      
+
+  if (
+    validation(nameValue, "customer name", null) &&
+    validation(addressValue, "Address", null) &&
+    validation(mobileValue, "Contact", mobilePattern.test(mobileValue))
+  ) {
+    let updatedCustomerDetails = {
+      customerId: idValue,
+      customerName: nameValue,
+      customerAddress: addressValue,
+      mobile: mobileValue,
+    };
+
+    console.log("Updated Customer Details: ", _Id, updatedCustomerDetails);
+
+    const customerJson = JSON.stringify(updatedCustomerDetails);
+    console.log(customerJson);
+
+    $.ajax({
+      type: "PUT",
+      url: `http://localhost:5000/api/customer/updateCustomer/${_Id}`, 
+      contentType: "application/json",
+      data: customerJson,
+      success: function () {
+        Swal.fire("Updated Successfully!", "Customer updated successfully", "success");
+        loadAllCustomers(); 
+        cleanInputs();
+      },
+      error: function (xhr, status, error) {
+        console.error("Error updating customer:", error);
+        Swal.fire("Error", "Failed to update customer", "error");
+      }
+    });
+  }
+});
 
 // function generateCustomer {
 function loadAllCustomers() {
   $.ajax({
-      url: "http://localhost:5000/api/customer/getAllCustomers",
-      type: "GET",
-      contentType: "application/json",
-      success: function (customers) {
-          console.log("Customers Loaded:", customers);
-          $("#customer-tbl-body").empty(); 
+    url: "http://localhost:5000/api/customer/getAllCustomers",
+    type: "GET",
+    contentType: "application/json",
+    success: function (customers) {
+      console.log("Customers Loaded:", customers);
 
-          customers.forEach((customer) => {
-              let row = `
-                  <tr>
-                      <th scope="row">${customer.id}</th>
+      customerData = customers;
+
+      $("#customer-tbl-body").empty();
+
+      customers.forEach((customer) => {
+        let row = `
+                    <tr>
+                      <th scope="row" style="display: none;" class="customer-id">${customer._id}</th>
+                      <td>${customer.id}</td>
                       <td>${customer.name}</td>
                       <td>${customer.address}</td>
                       <td>${customer.mobile}</td>
-                  </tr>
-              `;
-              $("#customer-tbl-body").append(row);
-          });
-      },
-      error: function (xhr, status, error) {
-          console.error("Error loading customers:", error);
-          Swal.fire("Error", "Failed to load customer data", "error");
-      }
+                    </tr>
+
+                `;
+        $("#customer-tbl-body").append(row);
+      });
+    },
+    error: function (xhr, status, error) {
+      console.error("Error loading customers:", error);
+      Swal.fire("Error", "Failed to load customer data", "error");
+    },
   });
 }
 
 $(document).ready(function () {
-  loadAllCustomers();
+  loadAllCustomers(); 
 });
-
 
 function showValidationError(title, text) {
   Swal.fire({
@@ -151,44 +198,24 @@ function validation(value, message, test) {
   return true;
 }
 
+$(document).ready(function () {
+  $("#customer-tbl-body").on("click", "tr", function () {
+    let _id = $(this).find("th.customer-id").text(); 
+    let customerIdValue = $(this).find("td:eq(0)").text();   
+    let customerNameValue = $(this).find("td:eq(1)").text(); 
+    let customerAddressValue = $(this).find("td:eq(2)").text(); 
+    let customerMobileValue = $(this).find("td:eq(3)").text(); 
 
-$("#customerTable").on("click", "tbody tr", function () {
-  let customerIdValue = $(this).find("th").text();
-  let nameValue = $(this).find("td:eq(0)").text();
-  let addressValue = $(this).find("td:eq(1)").text();
-  let contactValue = $(this).find("td:eq(2)").text();
+    console.log("Selected Customer: ", _id, customerIdValue, customerNameValue, customerAddressValue, customerMobileValue);
 
-  customerId.val(customerIdValue);
-  customerName.val(nameValue);
-  customerAddress.val(addressValue);
-  mobile.val(contactValue);
+    _Id = _id;
+    $("#customerID").val(customerIdValue);
+    $("#customerName").val(customerNameValue);
+    $("#address").val(customerAddressValue);
+    $("#mobile").val(customerMobileValue);
+  });
 });
 
-// update.on("click", function () {
-//   let idValue = customerId.val();
-//   let nameValue = customerName.val();
-//   let addressValue = customerAddress.val();
-//   let mobileValue = mobile.val();
-
-//   if (
-//     validation(nameValue, "customer name", null) &&
-//     validation(addressValue, "Address", null) &&
-//     validation(mobileValue, "Contact", mobilePattern.test(mobileValue))
-//   ) {
-//     customer_db.map((customer) => {
-//       if (String(customer.customer_id) === idValue) {
-//         customer.customer_name = nameValue;
-//         customer.customer_address = addressValue;
-//         customer.mobile = mobileValue;
-//       }
-//     });
-
-//     Swal.fire("Update Successfully !", "Successful", "success");
-//     cleanInputs();
-
-//     submit.prop("disabled", false);
-//   }
-// });
 
 // delete_btn.on("click", function () {
 //   let idValue = customerId.val();

@@ -52,9 +52,11 @@
 
 #customerTable {
     position: absolute;
-    top: 65%;
+    top: 50%;
     left: 1%;
     width: 98%;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 .container{
@@ -118,3 +120,34 @@
     left: 69.5%;
     width: 5%;
 }
+
+  
+  #customerTable th, #customerTable td {
+    padding: 9px;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+  
+  #customerTable thead {
+    display: table;
+    width: 98%;
+    table-layout: fixed;
+  }
+  
+  #customerTable tbody {
+    display: block;
+    max-height: 290px; /* Adjust as needed */
+    overflow-y: auto;
+    width: 98%;
+  }
+  
+  #customerTable tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+  
+  #customerTable th, #customerTable td {
+    width: 26%; 
+  }
+  
