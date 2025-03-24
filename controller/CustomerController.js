@@ -95,6 +95,7 @@ submit.on("click", () => {
   }
 });
 
+// Customer Update
 update.on("click", function () {
   let idValue = $("#customerId").val();        
   let nameValue = $("#customerName").val();    
