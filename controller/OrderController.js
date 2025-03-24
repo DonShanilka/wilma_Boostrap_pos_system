@@ -1,542 +1,597 @@
-import {item_db} from "../db/db.js";
-import {ItemModel} from "../model/ItemModel.js";
-
-import {customer_db} from "../db/db.js";
-import {CustomerModel} from "../model/CustomerModel.js";
-
-import {order_db} from "../db/db.js";
-import {OrderModel} from "../model/OrderModel.js";
-
-import {order_details_db} from "../db/db.js";
-import {orderModel} from "../model/OrderDetailsModel.js";
-
-let customerIdCB = $('#customer_id1');
-let itemIdCB = $('#item_code1');
-let orderId=$('#order_id');
-let itemName=$('#item_name1');
-let price=$('#price1');
-let qtyOnHand=$('#qty_on_hand');
-let qty=$('#getQty');
-let customerName=$('#customer_name1');
-let total=$('#total');
-let discountInput = $('#discount');
-let subTotalInput = $('#sub_total');
-let cashInput=$('#Cash');
-let balanceInput=$('#balance');
-
-
-let add = $('#addBtn');
-let resetItemDetails=$('#resetItemDetailsBtn');
-let submitBtn=$('#submitBtn2');
-let updateBtn=$('#updateBtn2');
-let deleteBtn=$('#deleteBtn2');
-let resetBtn=$('#resetBtn2');
-let updateBtn2=$('#UpdateBtn3');
-let removeBtn=$('#removeBtn');
-
-let items = [];
-
-let searchBtn=$('#search');
-let searchField=$('#searchField');
-
-let search_order=true;
-/*generate current date*/
-function generateCurrentDate(){
-    $("#order_date").val(getCurrentDate());
-}
-
-function getCurrentDate() {
-    // Get the current date
-    var currentDate = new Date();
-
-    // Format the date as desired
-    var formattedDate = currentDate.toLocaleDateString();
-
-    // Display the date (you can modify this based on how you want to use it)
-    console.log("Current Date: " + formattedDate);
-    return formattedDate;
-}
-
-
-$('#order_page').on('click', function() {
-    resetBtn.click();
-    updateBtn.prop("disabled", true);
-    deleteBtn.prop("disabled", true);
-    removeBtn.prop("disabled",true);
-    updateBtn2.prop("disabled",true);
-    searchField.attr("placeholder", "Search Order Id Here");
-
+// Initialize when the document is ready
+$(document).ready(function() {
+    // Load initial data
+    loadAllCustomers();
+    loadAllItems();
+    
+    // Initialize event listeners
+    initializeEventListeners();
+    
+    // Generate order ID
+    generateOrderID();
+    
+    // Set current date
+    setCurrentDate();
 });
 
-/*Function to populate the CustomerId Combo Box*/
-function populateCustomerIDs() {
-
-    // Clear existing options except the default one
-    customerIdCB.find("option:not(:first-child)").remove();
-
-    // Iterate through the customerArray and add options to the select element
-    for (let i = 0; i < customer_db.length; i++) {
-        customerIdCB.append($("<option>", {
-            value: customer_db[i].customer_id,
-            text: customer_db[i].customer_id
-        }));
-    }
+// Generate a unique order ID
+function generateOrderID() {
+    const orderID = "ORD-" + new Date().getTime();
+    $("#order_id").val(orderID);
 }
 
-/*Function to populate the ItemId Combo Box*/
-function populateItemIDs() {
-
-    // Clear existing options except the default one
-    itemIdCB.find("option:not(:first-child)").remove();
-
-    // Iterate through the customerArray and add options to the select element
-    for (let i = 0; i < item_db.length; i++) {
-        itemIdCB.append($("<option>", {
-            value: item_db[i].itemCode,
-            text: item_db[i].itemCode
-        }));
-    }
+// Set the current date in the order date field
+function setCurrentDate() {
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    $("#order_date").val(formattedDate);
 }
 
-function generateOrderId() {
-    let highestOrderId = 0;
-
-    for (let i = 0; i < order_db.length; i++) {
-        // Extract the numeric part of the item code
-        const numericPart = parseInt(order_db[i].order_id.split('-')[1]);
-
-        // Check if the numeric part is greater than the current highest
-        if (!isNaN(numericPart) && numericPart > highestOrderId) {
-
-            highestOrderId = numericPart;
-
-
+// Load all customers from the API
+function loadAllCustomers() {
+    $.ajax({
+        url: 'http://localhost:5000/api/customer/getAllCustomers',
+        method: 'GET',
+        dataType: 'json',
+        success: function(customers) {
+            const customerDropdown = $("#customer_id1");
+            customerDropdown.empty();
+            customerDropdown.append('<option selected>Select Customer Id</option>');
+            console.log("Customer Data For Place Order ", customers)
+            customers.forEach(customer => {
+                customerDropdown.append(`<option value="${customer._id}">${customer.id}</option>`);
+            });
+        },
+        error: function(error) {
+            console.error('Error loading customers:', error);
+            alert('Failed to load customers. Please try again.');
         }
-    }
-    // Increment the highest numeric part and format as "item-XXX"
-    return `order-${String(highestOrderId + 1).padStart(3, '0')}`;
-}
-
-itemIdCB.on("change", function() {
-    // Capture the selected value in a variable
-    let selectedValue = $(this).val();
-
-    let itemObj = $.grep(item_db, function(item) {
-        return item.itemCode === selectedValue;
-    });
-
-    if (itemObj.length > 0) {
-        // Access the first element in the filtered array
-        itemName.val(itemObj[0].itemName); // Assuming there is an 'item_name' property
-        price.val(itemObj[0].price);
-        qtyOnHand.val(itemObj[0].qty);
-    }
-
-    // Check if the item is already in the items array
-    let existingItem = items.find(item => item.itemCode === selectedValue);
-
-    if (existingItem) {
-        updateBtn2.prop("disabled", false);
-        removeBtn.prop("disabled",false);
-        add.prop("disabled", true);
-        qty.val(existingItem.qtyValue);
-    }
-});
-
-customerIdCB.on("change", function() {
-    // Capture the selected value in a variable
-    let selectedValue = $(this).val();
-
-    let customerObj = $.grep(customer_db, function(customer) {
-        return customer.customer_id === selectedValue;
-    });
-
-    if (customerObj.length > 0) {
-        // Access the first element in the filtered array
-        customerName.val(customerObj[0].customer_name);
-    }
-});
-
-/* Function to populate the table with items*/
-function populateItemTable() {
-    $('tbody').eq(2).empty();
-    items.map((item) => {
-        $('tbody').eq(2).append(
-            `<tr>
-                <th scope="row">${item.itemCode}</th>
-                <td>${item.itemName}</td>
-                <td>${item.priceValue}</td>
-                <td>${item.qtyOnHand}</td>
-                <td>${item.qtyValue}</td>
-            </tr>`
-        );
     });
 }
 
-/*Event handler for the "Add" button*/
-add.on("click", function () {
-    let itemCodeValue = itemIdCB.val();
-    let qtyValue = parseInt(qty.val());
-
-    if (qtyOnHand.val() >= qtyValue) {
-        let itemNameValue = itemName.val();
-        let priceValue = price.val();
-        let qtyOnHandValue = qtyOnHand.val();
-
-        /*Add a new item to the items array*/
-        items.push({
-            itemCode: itemCodeValue,
-            itemName: itemNameValue,
-            priceValue: priceValue,
-            qtyOnHand: qtyOnHandValue,
-            qtyValue: qtyValue
-        });
-
-        /*Populate the Item table*/
-        populateItemTable();
-
-        /*Reset the item details*/
-        resetItemDetails.click();
-    } else {
-        showValidationError('Invalid Input', 'Out of stock');
-    }
-
-    total.val(calculateTotal());
-
-});
-
-updateBtn2.on("click",function () {
-
-    let itemCodeValue = itemIdCB.val();
-    let qtyValue = parseInt(qty.val());
-
-    /*Check if the item is already in the items array*/
-    let existingItem = items.find(item => item.itemCode === itemCodeValue);
-
-    if (existingItem) {
-        if (qtyOnHand.val() >= qtyValue) {
-            /*Update the quantity of the existing item*/
-            existingItem.qtyValue = qtyValue;
-
-            /*Populate the Item table*/
-            populateItemTable();
-
-            /*Reset the item details*/
-            resetItemDetails.click();
-        } else {
-            showValidationError('Invalid Input', 'Out of stock');
-        }
-    }
-
-    total.val(calculateTotal());
-
-});
-
-function showValidationError(title, text) {
-    Swal.fire({
-        icon: 'error',
-        title: title,
-        text: text,
-        footer: '<a href="">Why do I have this issue?</a>'
-    });
-}
-
-resetItemDetails.on("click", function () {
-    itemIdCB.val('Select Item Code');
-    qty.val('');
-    itemName.val('');
-    price.val('');
-    qtyOnHand.val('');
-    updateBtn2.prop("disabled", true);
-    removeBtn.prop("disabled",true);
-    add.prop("disabled", false);
-});
-
-function calculateTotal() {
-    let total = 0;
-    items.forEach((item) => {
-        total += item.priceValue * item.qtyValue;
-    });
-    return total;
-}
-
-discountInput.on("input", function() {
-    const discountValue = parseFloat(discountInput.val()) || 0; // Get the discount value as a float
-    const totalValue = calculateTotal(); // Calculate the total based on your logic
-    const subtotalValue = totalValue - (totalValue * (discountValue / 100)); // Calculate the subtotal
-
-    // Update the sub-total input field
-    subTotalInput.val(subtotalValue);
-});
-
-cashInput.on("input", function() {
-    const cashValue = parseFloat(cashInput.val()) || 0; // Get the cash value as a float
-    const totalValue = parseFloat(subTotalInput.val())||0; // Calculate the total based on your logic
-    const balanceValue = cashValue - totalValue; // Calculate the balance
-
-    // Update the balance input field
-    balanceInput.val(balanceValue);
-});
-
-submitBtn.on("click", function (e) {
-
-    e.preventDefault();
-
-    // Get the data needed for the order
-    const orderDate = $("#order_date").val();
-    const orderId = $("#order_id").val();
-    const customerId = $("#customer_id1").val();
-    const total = $("#total").val();
-    const discount = $("#discount").val();
-    const cash = $("#Cash").val();
-
-    // Validate order data
-    if (!orderDate) {
-        showValidationError('Null Input', 'Please select an order date');
-        return;
-    }
-
-    if (!orderId) {
-        showValidationError('Null Input', 'Please generate an order ID');
-        return;
-    }
-
-    if (customerId === "Select Customer Id") {
-        showValidationError('Invalid Input', 'Please select a customer');
-        return;
-    }
-
-    if (!total || parseFloat(total) <= 0) {
-        showValidationError('Invalid Input', 'Total must be a positive number');
-        return;
-    }
-
-    if (!cash || parseFloat(cash) < 0) {
-        showValidationError('Invalid Input', 'Cash amount must be a positive number');
-        return;
-    }
-
-    const discountValue = parseFloat(discount);
-    if (isNaN(discountValue) || discountValue < 0 || discountValue > 100) {
-        showValidationError('Invalid Input', 'Discount must be a number between 0 and 100');
-        return;
-    }
-
-    // Create an order instance
-    const order = new OrderModel(orderDate, orderId, customerId, total, discount, cash);
-
-    // Add the order to the order_db array
-    order_db.push(order);
-
-    // Loop through the items in your order details
-    items.forEach(item => {
-        const orderDetail = new orderModel(orderId, item.itemCode, item.priceValue, item.qtyValue);
-        order_details_db.push(orderDetail);
-
-        item_db.forEach((itemObj) => {
-            if (itemObj.itemCode === item.itemCode) {
-                itemObj.qty -= item.qtyValue;
-            }
-        });
-    });
-
-    // Display a success message
-    Swal.fire(
-        'Order Placed Successfully!',
-        'The order has been saved.',
-        'success'
-    );
-
-    resetBtn.click();
-});
-
-resetBtn.on("click", function () {
-    // Reset the form fields to their initial state
-    generateCurrentDate();
-    populateCustomerIDs();
-    populateItemIDs();
-    orderId.val(generateOrderId());
-    $("#total").val('');       // Reset the total
-    $("#discount").val('');    // Reset the discount
-    $("#Cash").val('');        // Reset the cash input
-    customerName.val('');
-    itemName.val('');
-    price.val('');
-    qtyOnHand.val('');
-    total.val('');
-    discountInput.val('');
-    cashInput.val('');
-    subTotalInput.val('');
-    balanceInput.val('');
-
-    /*Clear the items array*/
-    items = [];
-
-    /*Clear the item order table*/
-    $("#item-order-table tbody").empty();
-
-    updateBtn.prop("disabled", true);
-    deleteBtn.prop("disabled", true);
-    submitBtn.prop("disabled",false);
-
-});
-
-deleteBtn.on("click", function () {
-    /*Assuming you have an orderId that you want to delete*/
-    const orderIdToDelete = orderId.val();
-
-    Swal.fire({
-        title: 'Are you sure?',
-        text: "You won't be able to revert this!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#3085d6',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'Delete'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            /* Find and remove the order with the matching orderId from the order_db array*/
-            const indexToDelete = order_db.findIndex(order => order.order_id === orderIdToDelete);
-            if (indexToDelete !== -1) {
-                order_db.splice(indexToDelete, 1);
-            }
-
-            /*Remove the corresponding order details from order_details_db (if needed)*/
-            for (let i = 0; i < order_details_db.length; i++) {
-                if(order_details_db[i].order_id === orderIdToDelete){
-                    order_details_db.splice(i, 1);
-                }
-            }
-
+// Load all items from the API
+function loadAllItems() {
+    $.ajax({
+        url: 'http://localhost:5000/api/item/getAllItems',
+        method: 'GET',
+        dataType: 'json',
+        success: function(items) {
+            const itemDropdown = $("#item_code1");
+            itemDropdown.empty();
+            itemDropdown.append('<option selected>Select Item Code</option>');
+            
             items.forEach(item => {
-                item_db.forEach((itemObj) => {
-                    if (itemObj.itemCode === item.itemCode) {
-                        itemObj.qty += item.qtyValue;
-                    }
-                });
+                itemDropdown.append(`<option value="${item.code}">${item.code}</option>`);
             });
-
-            resetBtn.click();
-
-            Swal.fire(
-                'Deleted!',
-                'Your file has been deleted.',
-                'success'
-            )
-
+        },
+        error: function(error) {
+            console.error('Error loading items:', error);
+            alert('Failed to load items. Please try again.');
         }
     });
+}
 
-});
-
-removeBtn.on("click", function () {
-    let index = items.findIndex(item => item.itemCode === itemIdCB.val());
-    items.splice(index, 1);
-    populateItemTable();
-    resetItemDetails.click();
-    total.val(calculateTotal());
-});
-
-$('#item-order-table').on('click', 'tbody tr', function() {
-
-    let itemCodeValue = $(this).find('th').text();
-    let itemNameValue = $(this).find('td:eq(0)').text();
-    let priceValue = $(this).find('td:eq(1)').text();
-    let qtyOnHandValue = $(this).find('td:eq(2)').text();
-    let qtyValue=$(this).find('td:eq(3)').text();
-
-    itemIdCB.val(itemCodeValue);
-    itemName.val(itemNameValue);
-    price.val(priceValue);
-    qtyOnHand.val(qtyOnHandValue);
-    qty.val(qtyValue);
-
-    updateBtn2.prop("disabled", false);
-    removeBtn.prop("disabled",false);
-    add.prop("disabled", true);
-
-});
-
-/*Modify the event handler for clicking on a row in the order details table*/
-function populateFields(orderIdValue){
-
-    /*Find the corresponding order in the order_db array*/
-    let order = order_db.find(order => order.order_id === orderIdValue);
-
-    /*Check if the order is found*/
-    if (order) {
-        /*Populate the order details on the order page*/
-        orderId.val(order.order_id);
-        $("#order_date").val(order.order_date);
-        customerIdCB.val(order.customer_id);
-        total.val(order.total);
-        discountInput.val(order.discount);
-
-        /*Calculate the subtotal and update the input*/
-        const discountValue = parseFloat(discountInput.val()) || 0;
-        const totalValue = parseFloat(total.val()) || 0;
-
-        const subtotalValue = totalValue - (totalValue * (discountValue / 100));
-        subTotalInput.val(subtotalValue.toFixed(2)); // Use toFixed to round to two decimal places
-
-        cashInput.val(order.cash);
-
-        /*Calculate the balance and update the input*/
-        const cashValue = parseFloat(cashInput.val()) || 0;
-        const balanceValue = cashValue - subtotalValue;
-        balanceInput.val(balanceValue.toFixed(2)); // Use toFixed to round to two decimal places
-
-        /*Populate the customer name based on the selected customer ID*/
-        let customerObj = $.grep(customer_db, function(customer) {
-            return customer.customer_id === order.customer_id;
-        });
-
-        if (customerObj.length > 0) {
-            /*Access the first element in the filtered array*/
-            customerName.val(customerObj[0].name);
+// Get customer details by ID
+function getCustomerById(_id) {
+    console.log("Customer ID getCustomerById Funtion ", _id)
+    $.ajax({
+        url: `http://localhost:5000/api/customer/getCustomerById/${_id}`,
+        type: 'GET',
+        contentType: "application/json",
+        success: function(customer) {
+            $("#customer_name1").val(customer.name);
+        },
+        error: function(error) {
+            console.error('Error loading customer details:', error);
+            alert('Failed to load customer details. Please try again.');
         }
+    });
+}
 
-        /*Populate the items table on the order page*/
-        items = order_details_db
-            .filter(orderDetail => orderDetail.order_id === orderIdValue)
-            .map(orderDetail => {
-                /*Find the corresponding item in the item_db array*/
-                let item = item_db.find(item => item && item.itemCode === orderDetail.item_id);
+// Get item details by ID
+function getItemById(itemCode) {
+    $.ajax({
+        url: `http://localhost:5000/api/item/getItemsById/${itemCode}`,
+        method: 'GET',
+        dataType: 'json',
+        success: function(item) {
+            $("#item_name1").val(item.name);
+            $("#price1").val(item.price);
+            $("#qty_on_hand").val(item.qtyOnHand);
+        },
+        error: function(error) {
+            console.error('Error loading item details:', error);
+            alert('Failed to load item details. Please try again.');
+        }
+    });
+}
 
-                if (item) {
-                    return {
-                        itemCode: item.itemCode,
-                        itemName: item.itemName,
-                        priceValue: item.price,
-                        qtyOnHand: item.qty,
-                        qtyValue: orderDetail.qty
-                    };
-                } else {
-                    /*Handle the case where the item is not found*/
-                    console.error(`Item not found for item code: ${orderDetail.item_code}`);
-                    return null; /*or handle it accordingly*/
-                }
-            });
+// Initialize all event listeners
+function initializeEventListeners() {
+    // Customer dropdown change event
+    $("#customer_id1").change(function() {
+        const customerId = $(this).val();
+        if (customerId !== "Select Customer Id") {
+            getCustomerById(customerId);
+        } else {
+            $("#customer_name1").val("");
+        }
+    });
+    
+    // Item dropdown change event
+    $("#item_code1").change(function() {
+        const itemCode = $(this).val();
+        if (itemCode !== "Select Item Code") {
+            getItemById(itemCode);
+        } else {
+            $("#item_name1").val("");
+            $("#price1").val("");
+            $("#qty_on_hand").val("");
+            $("#getQty").val("");
+        }
+    });
+    
+    // Add to Cart button click event
+    $("#addBtn").click(function() {
+        addItemToCart();
+    });
+    
+    // Remove button click event
+    $("#removeBtn").click(function() {
+        removeSelectedItem();
+    });
+    
+    // Update button click event
+    $("#UpdateBtn3").click(function() {
+        updateCartItem();
+    });
+    
+    // Reset item details button click event
+    $("#resetItemDetailsBtn").click(function() {
+        resetItemFields();
+    });
+    
+    // Table row click event for selecting an item
+    $("#item-order-table tbody").on("click", "tr", function() {
+        selectTableRow(this);
+    });
+    
+    // Calculate sub-total when discount changes
+    $("#discount").on("input", function() {
+        calculateSubTotal();
+    });
+    
+    // Calculate balance when cash input changes
+    $("#Cash").on("input", function() {
+        calculateBalance();
+    });
+    
+    // Buy button click event
+    $("#submitBtn2").click(function() {
+        processOrder();
+    });
+    
+    // Reset form button click event
+    $("#resetBtn2").click(function() {
+        resetOrderForm();
+    });
+    
+    // Search button click event
+    $("#search").click(function() {
+        searchOrder();
+    });
+}
 
-        /*Filter out items that are null (not found)*/
-        items = items.filter(item => item !== null);
-
-        populateItemTable();
-
-        updateBtn.prop("disabled", false);
-        deleteBtn.prop("disabled", false);
-        submitBtn.prop("disabled",true);
-
-    } else {
-        /*Show an error message if the order is not found*/
-        showValidationError('Order Not Found', 'The selected order details could not be found.');
+// Add item to cart
+function addItemToCart() {
+    const itemCode = $("#item_code1").val();
+    const itemName = $("#item_name1").val();
+    const price = $("#price1").val();
+    const qtyOnHand = parseInt($("#qty_on_hand").val());
+    const qty = parseInt($("#getQty").val());
+    
+    // Validate inputs
+    if (itemCode === "Select Item Code" || !qty) {
+        alert("Please select an item and enter quantity");
+        return;
+    }
+    
+    // Check if quantity is available
+    if (qty > qtyOnHand) {
+        alert("Not enough quantity available in stock");
+        return;
+    }
+    
+    // Check if item already exists in table
+    let itemExists = false;
+    $("#item-order-table tbody tr").each(function() {
+        const existingItemCode = $(this).find("td:first").text();
+        if (existingItemCode === itemCode) {
+            itemExists = true;
+            alert("Item already added to cart. Select and update if needed.");
+            return false;
+        }
+    });
+    
+    if (!itemExists) {
+        // Add new row to table
+        const row = `<tr>
+            <td>${itemCode}</td>
+            <td>${itemName}</td>
+            <td>${price}</td>
+            <td>${qtyOnHand}</td>
+            <td>${qty}</td>
+        </tr>`;
+        
+        $("#item-order-table tbody").append(row);
+        
+        // Update total
+        updateOrderTotal();
+        resetItemFields();
     }
 }
 
-searchBtn.on("click",function (){
-    if(search_order){
-        populateFields(searchField.val());
-        searchField.val('');
+// Update the selected cart item
+function updateCartItem() {
+    const selectedRow = $("#item-order-table tbody tr.selected");
+    if (selectedRow.length === 0) {
+        alert("Please select an item to update");
+        return;
     }
-});
+    
+    const itemCode = $("#item_code1").val();
+    const itemName = $("#item_name1").val();
+    const price = $("#price1").val();
+    const qtyOnHand = parseInt($("#qty_on_hand").val());
+    const qty = parseInt($("#getQty").val());
+    
+    // Validate inputs
+    if (itemCode === "Select Item Code" || !qty) {
+        alert("Please select an item and enter quantity");
+        return;
+    }
+    
+    // Check if quantity is available
+    if (qty > qtyOnHand) {
+        alert("Not enough quantity available in stock");
+        return;
+    }
+    
+    // Update the row
+    selectedRow.html(`
+        <td>${itemCode}</td>
+        <td>${itemName}</td>
+        <td>${price}</td>
+        <td>${qtyOnHand}</td>
+        <td>${qty}</td>
+    `);
+    
+    // Update total
+    updateOrderTotal();
+    resetItemFields();
+    selectedRow.removeClass("selected");
+}
 
+// Remove the selected item from cart
+function removeSelectedItem() {
+    const selectedRow = $("#item-order-table tbody tr.selected");
+    if (selectedRow.length === 0) {
+        alert("Please select an item to remove");
+        return;
+    }
+    
+    selectedRow.remove();
+    updateOrderTotal();
+    resetItemFields();
+}
+
+// Reset item selection fields
+function resetItemFields() {
+    $("#item_code1").val("Select Item Code");
+    $("#item_name1").val("");
+    $("#price1").val("");
+    $("#qty_on_hand").val("");
+    $("#getQty").val("");
+    $("#item-order-table tbody tr").removeClass("selected");
+}
+
+// Select a row in the table
+function selectTableRow(row) {
+    // Clear previous selection
+    $("#item-order-table tbody tr").removeClass("selected");
+    
+    // Add selected class to clicked row
+    $(row).addClass("selected");
+    
+    // Populate fields with row data
+    const cells = $(row).find("td");
+    const itemCode = $(cells[0]).text();
+    const qty = $(cells[4]).text();
+    
+    // Set item in dropdown
+    $("#item_code1").val(itemCode);
+    getItemById(itemCode);
+    
+    // Set quantity
+    $("#getQty").val(qty);
+}
+
+// Update the order total based on cart items
+function updateOrderTotal() {
+    let total = 0;
+    
+    $("#item-order-table tbody tr").each(function() {
+        const price = parseFloat($(this).find("td:eq(2)").text());
+        const qty = parseInt($(this).find("td:eq(4)").text());
+        total += price * qty;
+    });
+    
+    $("#total").val(total.toFixed(2));
+    
+    // Recalculate subtotal and balance
+    calculateSubTotal();
+    calculateBalance();
+}
+
+// Calculate subtotal based on total and discount
+function calculateSubTotal() {
+    const total = parseFloat($("#total").val()) || 0;
+    const discount = parseFloat($("#discount").val()) || 0;
+    
+    const subTotal = total - (total * (discount / 100));
+    $("#sub_total").val(subTotal.toFixed(2));
+    
+    // Update balance
+    calculateBalance();
+}
+
+// Calculate balance based on subtotal and cash
+function calculateBalance() {
+    const subTotal = parseFloat($("#sub_total").val()) || 0;
+    const cash = parseFloat($("#Cash").val()) || 0;
+    
+    const balance = cash - subTotal;
+    $("#balance").val(balance.toFixed(2));
+}
+
+// Process the complete order
+function processOrder() {
+    const orderId = $("#order_id").val();
+    const orderDate = $("#order_date").val();
+    const customerId = $("#customer_id1").val();
+    const customerName = $("#customer_name1").val();
+    const total = parseFloat($("#total").val()) || 0;
+    const discount = parseFloat($("#discount").val()) || 0;
+    const subTotal = parseFloat($("#sub_total").val()) || 0;
+    const cash = parseFloat($("#Cash").val()) || 0;
+    const balance = parseFloat($("#balance").val()) || 0;
+    
+    // Validate required fields
+    if (customerId === "Select Customer Id" || $("#item-order-table tbody tr").length === 0) {
+        alert("Please select a customer and add items to cart");
+        return;
+    }
+    
+    if (cash <= 0 || cash < subTotal) {
+        alert("Please enter a valid cash amount");
+        return;
+    }
+    
+    // Collect order items
+    const orderItems = [];
+    $("#item-order-table tbody tr").each(function() {
+        orderItems.push({
+            itemCode: $(this).find("td:eq(0)").text(),
+            itemName: $(this).find("td:eq(1)").text(),
+            price: parseFloat($(this).find("td:eq(2)").text()),
+            qty: parseInt($(this).find("td:eq(4)").text())
+        });
+    });
+    
+    // Create order object
+    const order = {
+        orderId: orderId,
+        orderDate: orderDate,
+        customerId: customerId,
+        customerName: customerName,
+        total: total,
+        discount: discount,
+        subTotal: subTotal,
+        cash: cash,
+        balance: balance,
+        items: orderItems
+    };
+    
+    console.log("Order processed:", order);
+    alert("Order processed successfully!");
+    resetOrderForm();
+}
+
+// Reset the entire order form
+// Reset the entire order form with enhanced functionality
+function resetOrderForm() {
+    // Reset customer selection
+    $("#customer_id1").val("Select Customer Id");
+    $("#customer_name1").val("");
+    
+    // Reset totals
+    $("#total").val("");
+    $("#discount").val("");
+    $("#sub_total").val("");
+    $("#Cash").val("");
+    $("#balance").val("");
+    
+    // Clear cart
+    $("#item-order-table tbody").empty();
+    
+    // Reset item fields
+    resetItemFields();
+    
+    // Generate new order ID
+    generateOrderID();
+    
+    // Set current date
+    setCurrentDate();
+    
+    // Show confirmation message
+    showSuccessMessage("Form has been reset successfully");
+    
+    // Reset search field
+    $("#searchField").val("");
+    
+    // Remove any highlighting or selections
+    $(".selected").removeClass("selected");
+    
+    // Enable/disable buttons as needed
+    $("#UpdateBtn3").prop("disabled", true);
+    $("#removeBtn").prop("disabled", true);
+    $("#addBtn").prop("disabled", false);
+}
+
+// Search for an order with AJAX implementation
+function searchOrder() {
+    const searchTerm = $("#searchField").val();
+    if (!searchTerm) {
+        showErrorMessage("Please enter a search term");
+        return;
+    }
+    
+    // Show loading indicator
+    const searchButton = $("#search");
+    const originalText = searchButton.html();
+    searchButton.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...');
+    searchButton.prop("disabled", true);
+    
+    // Implement AJAX call to search for orders
+    $.ajax({
+        url: `/order/searchOrders?term=${encodeURIComponent(searchTerm)}`,
+        method: 'GET',
+        dataType: 'json',
+        success: function(result) {
+            // Reset button state
+            searchButton.html(originalText);
+            searchButton.prop("disabled", false);
+            
+            if (result && result.orderId) {
+                // Order found, populate the form
+                populateOrderForm(result);
+                showSuccessMessage(`Order ${result.orderId} found and loaded`);
+            } else {
+                // No order found
+                showErrorMessage(`No orders found matching "${searchTerm}"`);
+            }
+        },
+        error: function(error) {
+            // Reset button state
+            searchButton.html(originalText);
+            searchButton.prop("disabled", false);
+            
+            console.error('Error searching for order:', error);
+            showErrorMessage("Failed to search for orders. Please try again.");
+        }
+    });
+}
+
+// Populate the form with order data
+function populateOrderForm(order) {
+    // Set order details
+    $("#order_id").val(order.orderId);
+    $("#order_date").val(order.orderDate);
+    
+    // Set customer details
+    $("#customer_id1").val(order.customerId);
+    $("#customer_name1").val(order.customerName);
+    
+    // Set financial details
+    $("#total").val(order.total);
+    $("#discount").val(order.discount);
+    $("#sub_total").val(order.subTotal);
+    $("#Cash").val(order.cash);
+    $("#balance").val(order.balance);
+    
+    // Clear and repopulate cart
+    $("#item-order-table tbody").empty();
+    
+    if (order.items && order.items.length > 0) {
+        order.items.forEach(item => {
+            const row = `<tr>
+                <td>${item.itemCode}</td>
+                <td>${item.itemName}</td>
+                <td>${item.price}</td>
+                <td>${item.qtyOnHand || "N/A"}</td>
+                <td>${item.qty}</td>
+            </tr>`;
+            
+            $("#item-order-table tbody").append(row);
+        });
+    }
+    
+    // Update UI state
+    $("#submitBtn2").text("Update Order");
+    
+    // Add a "New Order" button if it doesn't exist
+    if ($("#newOrderBtn").length === 0) {
+        $("#order_btn").prepend(`
+            <button id="newOrderBtn" type="button" class="btn btn-outline-primary">
+                New Order
+            </button>
+        `);
+        
+        // Add event listener for the new button
+        $("#newOrderBtn").click(function() {
+            // Reset form and switch back to "Buy" mode
+            resetOrderForm();
+            $("#submitBtn2").text("Buy");
+            $(this).remove(); // Remove the "New Order" button
+        });
+    }
+}
+
+
+// Function to show success message
+function showSuccessMessage(message) {
+    $('.order-error-message').slideUp();
+    $('.order-success-message').text(message).slideDown().delay(3000).slideUp();
+}
+
+// Function to show error message
+function showErrorMessage(message) {
+    $('.order-success-message').slideUp();
+    $('.order-error-message').text(message).slideDown().delay(3000).slideUp();
+}
+
+// Initialize all components on document ready
+$(document).ready(function() {
+    // Add styles
+    addOrderStyles();
+    
+    // Replace alert with custom messages
+    window.originalAlert = window.alert;
+    window.alert = function(message) {
+        if (message.toLowerCase().includes("success") || 
+            message.toLowerCase().includes("processed") || 
+            message.toLowerCase().includes("loaded")) {
+            showSuccessMessage(message);
+        } else {
+            showErrorMessage(message);
+        }
+    };
+    
+    // Initially disable update and remove buttons until row is selected
+    $("#UpdateBtn3").prop("disabled", true);
+    $("#removeBtn").prop("disabled", true);
+    
+    // Enable buttons when row is selected
+    $("#item-order-table tbody").on("click", "tr", function() {
+        $("#UpdateBtn3").prop("disabled", false);
+        $("#removeBtn").prop("disabled", false);
+    });
+    
+    // Add keyboard shortcut for search (Ctrl+F)
+    $(document).keydown(function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.keyCode === 70) {
+            e.preventDefault();
+            $("#searchField").focus();
+        }
+    });
+});
