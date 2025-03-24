@@ -61,7 +61,7 @@ function loadAllItems() {
             itemDropdown.append('<option selected>Select Item Code</option>');
             
             items.forEach(item => {
-                itemDropdown.append(`<option value="${item.code}">${item.code}</option>`);
+                itemDropdown.append(`<option value="${item._id}">${item.itemId}</option>`);
             });
         },
         error: function(error) {
@@ -73,7 +73,7 @@ function loadAllItems() {
 
 // Get customer details by ID
 function getCustomerById(_id) {
-    console.log("Customer ID getCustomerById Funtion ", _id)
+    console.log("Customer ID getCustomerById Funtion ", _id);
     $.ajax({
         url: `http://localhost:5000/api/customer/getCustomerById/${_id}`,
         type: 'GET',
@@ -89,15 +89,17 @@ function getCustomerById(_id) {
 }
 
 // Get item details by ID
-function getItemById(itemCode) {
+function getItemById(_id) {
+    console.log("Item ID getItemById Function", _id);
     $.ajax({
-        url: `http://localhost:5000/api/item/getItemsById/${itemCode}`,
-        method: 'GET',
-        dataType: 'json',
-        success: function(item) {
-            $("#item_name1").val(item.name);
-            $("#price1").val(item.price);
-            $("#qty_on_hand").val(item.qtyOnHand);
+        url: `http://localhost:5000/api/item/getItemsById/${_id}`,
+        type: 'GET',
+        dataType: 'json', // Use 'json' instead of 'application/json'
+        success: function(product) {
+            console.log("Item Data For Place Order", product);
+            $("#item_name1").val(product.name);
+            $("#price1").val(product.price);
+            $("#qty_on_hand").val(product.quantity);
         },
         error: function(error) {
             console.error('Error loading item details:', error);
