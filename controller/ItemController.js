@@ -111,6 +111,34 @@ update.on("click", function () {
   }
 });
 
+// Delete Item
+delete_btn.on("click", function () {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Delete",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+            url: `http://localhost:5000/api/item/deleteItems/${_Id}`,
+            type: "DELETE",
+            success: function (response) {
+              Swal.fire("Deleted!", "Item has been deleted.", "success");
+              loadAllItems(); 
+            },
+            error: function (xhr, status, error) {
+              console.error("Error deleting item:", error);
+              Swal.fire("Error", "Failed to delete Item", "error");
+            }
+          });
+      }
+    });
+  });
+
 // loadAll Items
 function loadAllItems() {
   $.ajax({
@@ -144,42 +172,6 @@ function loadAllItems() {
   });
 }
 
-// Delete Item
-delete_btn.on("click", function () {
-    Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Delete",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        $.ajax({
-            url: `http://localhost:5000/api/item/deleteItems/${_Id}`,
-            type: "DELETE",
-            success: function (response) {
-              Swal.fire("Deleted!", "Item has been deleted.", "success");
-              loadAllItems(); 
-            },
-            error: function (xhr, status, error) {
-              console.error("Error deleting item:", error);
-              Swal.fire("Error", "Failed to delete Item", "error");
-            }
-          });
-      }
-    });
-  });
-
-
-function resetColumns() {
-  reset.click();
-  itemId.val(generateItemCode());
-  submit.prop("disabled", false);
-  delete_btn.prop("disabled", true);
-  update.prop("disabled", true);
-}
 
 function validation(value, message, test) {
   if (!value) {
@@ -246,8 +238,3 @@ reset.on("click", function (e) {
   delete_btn.prop("disabled", true);
   update.prop("disabled", true);
 });
-
-// document.getElementById("itemSubmit").onclick = function () {
-//     itemCount = item_db.length;
-//     document.getElementById("item-count-lable").innerHTML = itemCount;
-// }

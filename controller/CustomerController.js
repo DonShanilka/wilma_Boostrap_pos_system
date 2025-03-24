@@ -257,8 +257,3 @@ reset.on("click", function (e) {
   update.prop("disabled", true);
 });
 
-// document.getElementById("customerSubmit").onclick = function () {
-//   customerCount = customer_db.length;
-//   document.getElementById("customerCount-lable").innerHTML = customerCount;
-// };
-
