@@ -18,15 +18,15 @@ let itemCount = 0;
 let _Id = "";
 
 $(document).ready(function () {
-    loadAllItems(); 
-  });
+  loadAllItems();
+});
 
 const cleanInputs = () => {
-    $("#itemId").val("");
-    $("#itemName").val("");
-    $("#price").val("");
-    $("#qty").val("");
-  };
+  $("#itemId").val("");
+  $("#itemName").val("");
+  $("#price").val("");
+  $("#qty").val("");
+};
 
 // Item Save
 submit.on("click", function () {
@@ -59,81 +59,73 @@ submit.on("click", function () {
         Swal.fire("Save Successfully !", "Successful", "success");
         cleanInputs();
       },
-        error: function (xhr, status, error) {
-            console.log("Error: ", error);
-            console.log("Response: ", xhr.responseText);
-            Swal.fire("Error", "Error in adding customer", "error");
-        },
+      error: function (xhr, status, error) {
+        console.log("Error: ", error);
+        console.log("Response: ", xhr.responseText);
+        Swal.fire("Error", "Error in adding customer", "error");
+      },
     });
   }
 });
 
-// Update Item 
+// Update Item
 update.on("click", function () {
-    let itemCodeValue = itemId.val();
-    let itemNameValue = itemName.val().trim();
-    let priceValue = parseFloat(price.val());
-    let qtyOnHandValue = parseInt(qty.val(), 10);
-  
-    if (
-      validation(itemNameValue, "item name", null) &&
-      validation(priceValue, "Price", null) &&
-      validation(qtyOnHandValue, "Qty On Hand", null)
-    ) {
-      let updateItemDetails = {
-        itemId: itemCodeValue,
-        name: itemNameValue,
-        price: priceValue,
-        quantity: qtyOnHandValue,
-      }
+  let itemCodeValue = itemId.val();
+  let itemNameValue = itemName.val().trim();
+  let priceValue = parseFloat(price.val());
+  let qtyOnHandValue = parseInt(qty.val(), 10);
 
-      console.log("Update Item Details: ", _Id, updateItemDetails);
+  if (
+    validation(itemNameValue, "item name", null) &&
+    validation(priceValue, "Price", null) &&
+    validation(qtyOnHandValue, "Qty On Hand", null)
+  ) {
+    let updateItemDetails = {
+      itemId: itemCodeValue,
+      name: itemNameValue,
+      price: priceValue,
+      quantity: qtyOnHandValue,
+    };
 
-      const itemJson = JSON.stringify(updateItemDetails);
-      console.log(itemJson);
+    console.log("Update Item Details: ", _Id, updateItemDetails);
 
-      $.ajax({
-        type: "PUT",
-        url: `http://localhost:5000/api/item/updateItems/${_Id}`,
-        contentType: "application/json",
-        data: itemJson,
-        success: function () {
-          Swal.fire("Update Successfully !", "Successful", "success");
-          cleanInputs();
-          loadAllItems();
-        },
-        error: function (xhr, status, error) {
-          console.log("Error: ", error);
-          console.log("Response: ", xhr.responseText);
-          Swal.fire("Error", "Error in updating item", "error");
-        },
-      });
-    }
-  });
+    const itemJson = JSON.stringify(updateItemDetails);
+    console.log(itemJson);
 
-function resetColumns() {
-  reset.click();
-  itemId.val(generateItemCode());
-  submit.prop("disabled", false);
-  delete_btn.prop("disabled", true);
-  update.prop("disabled", true);
-}
+    $.ajax({
+      type: "PUT",
+      url: `http://localhost:5000/api/item/updateItems/${_Id}`,
+      contentType: "application/json",
+      data: itemJson,
+      success: function () {
+        Swal.fire("Update Successfully !", "Successful", "success");
+        cleanInputs();
+        loadAllItems();
+      },
+      error: function (xhr, status, error) {
+        console.log("Error: ", error);
+        console.log("Response: ", xhr.responseText);
+        Swal.fire("Error", "Error in updating item", "error");
+      },
+    });
+  }
+});
 
 // loadAll Items
 function loadAllItems() {
-    $.ajax({
-      url: "http://localhost:5000/api/item/getAllItems",
-      type: "GET",
-      contentType: "application/json",
-      success: function (items) {
-        console.log("Items Loaded:", items);
-  
-        // Clear the existing table body content
-        $("#item-tbl-body").empty();
-  
-        // Iterate over each item and append a row to the table body
-        items.forEach((item) => {
-          let row = `
+  $.ajax({
+    url: "http://localhost:5000/api/item/getAllItems",
+    type: "GET",
+    contentType: "application/json",
+    success: function (items) {
+      console.log("Items Loaded:", items);
+
+      // Clear the existing table body content
+      $("#item-tbl-body").empty();
+
+      // Iterate over each item and append a row to the table body
+      items.forEach((item) => {
+        let row = `
             <tr>
               <td style="display: none;" class="item-id">${item._id}</td>
               <td>${item.itemId}</td>
@@ -142,16 +134,52 @@ function loadAllItems() {
               <td>${item.quantity}</td>
             </tr>
           `;
-          $("#item-tbl-body").append(row);
-        });
-      },
-      error: function (xhr, status, error) {
-        console.error("Error loading items:", error);
-        Swal.fire("Error", "Failed to load item data", "error");
-      },
+        $("#item-tbl-body").append(row);
+      });
+    },
+    error: function (xhr, status, error) {
+      console.error("Error loading items:", error);
+      Swal.fire("Error", "Failed to load item data", "error");
+    },
+  });
+}
+
+// Delete Item
+delete_btn.on("click", function () {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Delete",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        $.ajax({
+            url: `http://localhost:5000/api/item/deleteItems/${_Id}`,
+            type: "DELETE",
+            success: function (response) {
+              Swal.fire("Deleted!", "Item has been deleted.", "success");
+              loadAllItems(); 
+            },
+            error: function (xhr, status, error) {
+              console.error("Error deleting item:", error);
+              Swal.fire("Error", "Failed to delete Item", "error");
+            }
+          });
+      }
     });
-  }
-  
+  });
+
+
+function resetColumns() {
+  reset.click();
+  itemId.val(generateItemCode());
+  submit.prop("disabled", false);
+  delete_btn.prop("disabled", true);
+  update.prop("disabled", true);
+}
 
 function validation(value, message, test) {
   if (!value) {
@@ -179,30 +207,34 @@ function showValidationError(title, text) {
 }
 
 $(document).ready(function () {
-    $("#itemTable").on("click", "tbody tr", function () {
-      let _id = $(this).find("td:eq(0)").text(); 
-      let itemCodeValue = $(this).find("td:eq(1)").text().trim();
-      let itemNameValue = $(this).find("td:eq(2)").text().trim();
-      let priceValue = $(this).find("td:eq(3)").text().trim();
-      let qtyValue = $(this).find("td:eq(4)").text().trim();
+  $("#itemTable").on("click", "tbody tr", function () {
+    let _id = $(this).find("td:eq(0)").text();
+    let itemCodeValue = $(this).find("td:eq(1)").text().trim();
+    let itemNameValue = $(this).find("td:eq(2)").text().trim();
+    let priceValue = $(this).find("td:eq(3)").text().trim();
+    let qtyValue = $(this).find("td:eq(4)").text().trim();
 
-      console.log("Selected Item: ",_id, itemCodeValue, itemNameValue, priceValue, qtyValue);
+    console.log(
+      "Selected Item: ",
+      _id,
+      itemCodeValue,
+      itemNameValue,
+      priceValue,
+      qtyValue
+    );
 
-      _Id = _id;
-  
-      $("#itemId").val(itemCodeValue);
-      $("#itemName").val(itemNameValue);
-      $("#price").val(priceValue);
-      $("#qty").val(qtyValue);
-  
-      $("#submit").prop("disabled", true);
-      $("#delete_btn").prop("disabled", false);
-      $("#update").prop("disabled", false);
-    });
+    _Id = _id;
+
+    $("#itemId").val(itemCodeValue);
+    $("#itemName").val(itemNameValue);
+    $("#price").val(priceValue);
+    $("#qty").val(qtyValue);
+
+    $("#submit").prop("disabled", true);
+    $("#delete_btn").prop("disabled", false);
+    $("#update").prop("disabled", false);
   });
-  
-
-
+});
 
 reset.on("click", function (e) {
   e.preventDefault();
@@ -213,35 +245,6 @@ reset.on("click", function (e) {
   submit.prop("disabled", false);
   delete_btn.prop("disabled", true);
   update.prop("disabled", true);
-});
-
-
-
-delete_btn.on("click", function () {
-  let itemCodeValue = itemId.val();
-
-  Swal.fire({
-    title: "Are you sure?",
-    text: "You won't be able to revert this!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#3085d6",
-    cancelButtonColor: "#d33",
-    confirmButtonText: "Delete",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      let index = item_db.findIndex((item) => item.itemCode === itemCodeValue);
-      item_db.splice(index, 1);
-
-      itemCount = item_db.length;
-      document.getElementById("item-count-lable").innerHTML = itemCount;
-
-      populateItemTBL();
-      resetColumns();
-      Swal.fire("Deleted!", "Your file has been deleted.", "success");
-      submit.prop("disabled", false);
-    }
-  });
 });
 
 // document.getElementById("itemSubmit").onclick = function () {
