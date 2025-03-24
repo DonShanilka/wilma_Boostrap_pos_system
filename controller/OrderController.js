@@ -367,18 +367,18 @@ function processOrder() {
     const subTotal = parseFloat($("#sub_total").val()) || 0;
     const cash = parseFloat($("#Cash").val()) || 0;
     const balance = parseFloat($("#balance").val()) || 0;
-    
+
     // Validate required fields
     if (customerId === "Select Customer Id" || $("#item-order-table tbody tr").length === 0) {
-        alert("Please select a customer and add items to cart");
+        alert("Please select a customer and add items to the cart.");
         return;
     }
-    
+
     if (cash <= 0 || cash < subTotal) {
-        alert("Please enter a valid cash amount");
+        alert("Please enter a valid cash amount.");
         return;
     }
-    
+
     // Collect order items
     const orderItems = [];
     $("#item-order-table tbody tr").each(function() {
@@ -389,7 +389,7 @@ function processOrder() {
             qty: parseInt($(this).find("td:eq(4)").text())
         });
     });
-    
+
     // Create order object
     const order = {
         orderId: orderId,
@@ -403,11 +403,27 @@ function processOrder() {
         balance: balance,
         items: orderItems
     };
-    
-    console.log("Order processed:", order);
-    alert("Order processed successfully!");
-    resetOrderForm();
+
+    console.log("Order Data For Place Order", order);
+
+    // Send order data to the backend via AJAX
+    $.ajax({
+        url: 'http://localhost:5000/api/order/saveOrder', 
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(order),
+        success: function(response) {
+            console.log("Order processed successfully:", response);
+            Swal.fire("Deleted!", "Customer has been deleted.", "success");
+            resetOrderForm();
+        },
+        error: function(xhr, status, error) {
+            console.error('Error processing order:', xhr.responseText);
+            Swal.fire("Error", "Failed to delete customer", "error");
+        }
+    });
 }
+
 
 // Reset the entire order form
 // Reset the entire order form with enhanced functionality
