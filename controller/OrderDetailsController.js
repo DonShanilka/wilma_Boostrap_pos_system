@@ -1,81 +1,119 @@
-import {customer_db, order_db} from "../db/db.js";
-import {OrderModel} from "../model/OrderModel.js";
+// orderDetailsController.js
 
-import {order_details_db} from "../db/db.js";
-import {orderModel} from "../model/OrderDetailsModel.js";
+// DOM Elements
+const orderTableBody = $("#order-details-tbody");
+const customerCountLabel = $("#customerCount-lable");
+const itemCountLabel = $("#item-count-lable");
+const orderCountLabel = $("#order-lable");
+const searchBtn = $("#search4");
+const searchField = $("#searchField4");
 
-let searchField=$('#searchField4');
-
-let totalOrderCount = 0;
-
-//Order Details search
-searchField.on('input', function () {
-    let search_term = searchField.val();
-
-    let results = order_db.filter((item) =>
-
-        item.order_date.toLowerCase().startsWith(search_term.toLowerCase()) || item.order_id.toLowerCase().startsWith(search_term.toLowerCase()) ||
-        item.customer_id.toLowerCase().startsWith(search_term.toLowerCase())
-
-    );
-
-    $('#order-details-tbody').eq(0).empty();
-    results.map((orderDetails, index) => {
-        let tbl_row = `<tr>
-                <th scope="row">${orderDetails.order_id}</th>
-                <td>${orderDetails.order_date}</td>
-                <td>${orderDetails.customer_id}</td>
-                <td>${orderDetails.total}</td>
-                <td>${orderDetails.discount}</td>
-                <td>${calculateSubtotal(orderDetails.total, orderDetails.discount)}</td>
-                <td>${orderDetails.cash}</td>
-                <td>${calculateBalance(orderDetails.cash, orderDetails.total, orderDetails.discount)}</td>                
-            </tr>`;
-        $('#order-details-tbody').eq(0).append(tbl_row);
-    });
-
+// Load all orders on document ready
+$(document).ready(function () {
+  loadAllOrders();
 });
 
-function populateTableOrderDetails() {
-    $('#order-details-tbody').eq(0).empty();
-    order_db.map((orderDetails) => {
-        $('#order-details-tbody').eq(0).append(
-            `<tr>
-                <th scope="row">${orderDetails.order_id}</th>
-                <td>${orderDetails.order_date}</td>
-                <td>${orderDetails.customer_id}</td>
-                <td>${orderDetails.total}</td>
-                <td>${orderDetails.discount}</td>
-                <td>${calculateSubtotal(orderDetails.total, orderDetails.discount)}</td>
-                <td>${orderDetails.cash}</td>
-                <td>${calculateBalance(orderDetails.cash, orderDetails.total, orderDetails.discount)}</td>                
-            </tr>`
-        );
-    });
+// Function to load all orders
+function loadAllOrders() {
+  $.ajax({
+    url: "http://localhost:2000/api/order/getAllOrders",
+    type: "GET",
+    contentType: "application/json",
+    success: function (orders) {
+      console.log("Orders Loaded:", orders);
+      orderTableBody.empty();
+      orders.forEach((order) => {
+        const row = `
+          <tr>
+            <td>${order.orderId}</td>
+            <td>${order.orderDate}</td>
+            <td>${order.customerId}</td>
+            <td>${order.total}</td>
+            <td>${order.discount}</td>
+            <td>${order.subTotal}</td>
+            <td>${order.cash}</td>
+            <td>${order.balance}</td>
+          </tr>
+        `;
+        orderTableBody.append(row);
+      });
+      // Update counts
+      orderCountLabel.text(orders.length);
+      updateCustomerAndItemCounts();
+    },
+    error: function (xhr, status, error) {
+      console.error("Error loading orders:", error);
+      Swal.fire("Error", "Failed to load order data", "error");
+    },
+  });
 }
 
-// Helper function to calculate subtotal based on total and discount
-function calculateSubtotal(total, discount) {
-    const discountValue = parseFloat(discount) || 0;
-    const subtotal = total - (total * (discountValue / 100));
-    return subtotal.toFixed(2); // Assuming you want two decimal places
+// Function to update customer and item counts
+function updateCustomerAndItemCounts() {
+  // Fetch customers
+  $.ajax({
+    url: "http://localhost:2000/api/customer/getAllCustomers",
+    type: "GET",
+    contentType: "application/json",
+    success: function (customers) {
+      customerCountLabel.text(customers.length);
+    },
+    error: function (xhr, status, error) {
+      console.error("Error loading customers:", error);
+    },
+  });
+
+  // Fetch items
+  $.ajax({
+    url: "http://localhost:2000/api/item/getAllItems",
+    type: "GET",
+    contentType: "application/json",
+    success: function (items) {
+      itemCountLabel.text(items.length);
+    },
+    error: function (xhr, status, error) {
+      console.error("Error loading items:", error);
+    },
+  });
 }
 
-// Helper function to calculate balance based on cash, total, and discount
-function calculateBalance(cash, total, discount) {
-    const discountValue = parseFloat(discount) || 0;
-    const subtotal = calculateSubtotal(total, discount);
-    const balance = cash - parseFloat(subtotal);
-    return balance.toFixed(2); // Assuming you want two decimal places
-}
-
-$('#order_details_page').on('click', function() {
-    populateTableOrderDetails();
-});
-
-
-document.getElementById("submitBtn2").onclick = function () {
-    totalOrderCount = order_details_db.length;
-    document.getElementById("order-lable").innerHTML = totalOrderCount;
+// Search functionality
+searchBtn.on("click", function () {
+  const query = searchField.val().trim();
+  if (!query) {
+    Swal.fire("Input Required", "Please enter a search term.", "warning");
+    return;
   }
 
+  $.ajax({
+    url: `http://localhost:2000/api/order/searchOrder/${query}`,
+    type: "GET",
+    contentType: "application/json",
+    success: function (orders) {
+      if (orders.length === 0) {
+        Swal.fire("No Results", "No orders found matching your search.", "info");
+        return;
+      }
+      orderTableBody.empty();
+      orders.forEach((order) => {
+        const row = `
+          <tr>
+            <td>${order.orderId}</td>
+            <td>${order.orderDate}</td>
+            <td>${order.customerId}</td>
+            <td>${order.total}</td>
+            <td>${order.discount}</td>
+            <td>${order.subTotal}</td>
+            <td>${order.cash}</td>
+            <td>${order.balance}</td>
+          </tr>
+        `;
+        orderTableBody.append(row);
+      });
+    },
+    error: function (xhr, status, error) {
+      console.error("Error searching orders:", error);
+      Swal.fire("Error", "Failed to search orders", "error");
+    },
+  });
+});

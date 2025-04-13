@@ -52,7 +52,7 @@ submit.on("click", function () {
 
     $.ajax({
       type: "POST",
-      url: "http://localhost:5000/api/item/saveItems",
+      url: "http://localhost:2000/api/item/saveItems",
       contentType: "application/json",
       data: itemJson,
       success: function () {
@@ -94,7 +94,7 @@ update.on("click", function () {
 
     $.ajax({
       type: "PUT",
-      url: `http://localhost:5000/api/item/updateItems/${_Id}`,
+      url: `http://localhost:2000/api/item/updateItems/${_Id}`,
       contentType: "application/json",
       data: itemJson,
       success: function () {
@@ -124,7 +124,7 @@ delete_btn.on("click", function () {
     }).then((result) => {
       if (result.isConfirmed) {
         $.ajax({
-            url: `http://localhost:5000/api/item/deleteItems/${_Id}`,
+            url: `http://localhost:2000/api/item/deleteItems/${_Id}`,
             type: "DELETE",
             success: function (response) {
               Swal.fire("Deleted!", "Item has been deleted.", "success");
@@ -142,7 +142,7 @@ delete_btn.on("click", function () {
 // loadAll Items
 function loadAllItems() {
   $.ajax({
-    url: "http://localhost:5000/api/item/getAllItems",
+    url: "http://localhost:2000/api/item/getAllItems",
     type: "GET",
     contentType: "application/json",
     success: function (items) {

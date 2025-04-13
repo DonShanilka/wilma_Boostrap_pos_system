@@ -30,7 +30,7 @@ function setCurrentDate() {
 // Load all customers from the API
 function loadAllCustomers() {
     $.ajax({
-        url: 'http://localhost:5000/api/customer/getAllCustomers',
+        url: 'http://localhost:2000/api/customer/getAllCustomers',
         method: 'GET',
         dataType: 'json',
         success: function(customers) {
@@ -52,7 +52,7 @@ function loadAllCustomers() {
 // Load all items from the API
 function loadAllItems() {
     $.ajax({
-        url: 'http://localhost:5000/api/item/getAllItems',
+        url: 'http://localhost:2000/api/item/getAllItems',
         method: 'GET',
         dataType: 'json',
         success: function(items) {
@@ -75,7 +75,7 @@ function loadAllItems() {
 function getCustomerById(_id) {
     console.log("Customer ID getCustomerById Funtion ", _id);
     $.ajax({
-        url: `http://localhost:5000/api/customer/getCustomerById/${_id}`,
+        url: `http://localhost:2000/api/customer/getCustomerById/${_id}`,
         type: 'GET',
         contentType: "application/json",
         success: function(customer) {
@@ -92,7 +92,7 @@ function getCustomerById(_id) {
 function getItemById(_id) {
     console.log("Item ID getItemById Function", _id);
     $.ajax({
-        url: `http://localhost:5000/api/item/getItemsById/${_id}`,
+        url: `http://localhost:2000/api/item/getItemsById/${_id}`,
         type: 'GET',
         dataType: 'json', // Use 'json' instead of 'application/json'
         success: function(product) {
@@ -408,7 +408,7 @@ function processOrder() {
 
     // Send order data to the backend via AJAX
     $.ajax({
-        url: 'http://localhost:5000/api/order/saveOrder', 
+        url: 'http://localhost:2000/api/order/saveOrder', 
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(order),

@@ -54,7 +54,7 @@ submit.on("click", () => {
 
     $.ajax({
       type: "POST",
-      url: "http://localhost:5000/api/customer/saveCustomer",
+      url: "http://localhost:2000/api/customer/saveCustomer",
       contentType: "application/json",
       data: customerJson,
       success: function () {
@@ -96,7 +96,7 @@ update.on("click", function () {
 
     $.ajax({
       type: "PUT",
-      url: `http://localhost:5000/api/customer/updateCustomer/${_Id}`, 
+      url: `http://localhost:2000/api/customer/updateCustomer/${_Id}`, 
       contentType: "application/json",
       data: customerJson,
       success: function () {
@@ -125,7 +125,7 @@ deleteBtn.on("click", function () {
     if (result.isConfirmed) {
       // Proceed with deletion
       $.ajax({
-        url: `http://localhost:5000/api/customer/deleteCustomer/${_Id}`,
+        url: `http://localhost:2000/api/customer/deleteCustomer/${_Id}`,
         type: "DELETE",
         success: function (response) {
           Swal.fire("Deleted!", "Customer has been deleted.", "success");
@@ -143,7 +143,7 @@ deleteBtn.on("click", function () {
 // function generateCustomer {
 function loadAllCustomers() {
   $.ajax({
-    url: "http://localhost:5000/api/customer/getAllCustomers",
+    url: "http://localhost:2000/api/customer/getAllCustomers",
     type: "GET",
     contentType: "application/json",
     success: function (customers) {
